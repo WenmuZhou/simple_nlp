@@ -4,10 +4,9 @@
 
 import os
 import time
-import cv2
 import torch
 
-from model import BiRNN,TextCNN
+from model import BiRNN, TextCNN
 
 
 class Pytorch_model:
@@ -34,14 +33,17 @@ class Pytorch_model:
         self.model.eval()
 
     def predict(self, sentence):
-        if isinstance(sentence,str):
+        tic = time.time()
+        if isinstance(sentence, str):
             sentence = sentence.split(' ')
         sentence = torch.tensor([self.vocab.stoi[word] for word in sentence], device=self.device)
         sentence = sentence.unsqueeze(0)
         with torch.no_grad():
-            preds = self.model(sentence)
-        label = torch.argmax(preds, dim=1)
-        return 'positive' if label.item() == 1 else 'negative'
+            preds = self.model(sentence).softmax(dim=1)[0]
+        label = preds.argmax()
+        conf = preds[label].item()
+        result = 'positive' if label.item() == 1 else 'negative'
+        return {'value': result, 'conf': conf, 'time': time.time() - tic}
 
 
 if __name__ == '__main__':
@@ -53,7 +55,7 @@ if __name__ == '__main__':
     model = Pytorch_model(model_path, gpu_id=0)
     while True:
         s = input('请输入字符串：')
-        if s== 'exit':
+        if s == 'exit':
             break
         result = model.predict(s)
         print(result)

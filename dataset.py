@@ -56,8 +56,19 @@ def preprocess_imdb(data, vocab, max_l=500):
     return features, labels
 
 
+def load_csv(csv_file, sep=','):
+    data = []
+    with open(csv_file, encoding='utf8') as f:
+        for line in f.readlines():
+            line = line.replace('\n', '').split(sep)
+            data.append(line)
+    return data
+
+
 def get_dataset(data_root, max_l):
-    train_data, test_data = read_imdb('train', data_root), read_imdb('test', data_root)
+    # train_data, test_data = read_imdb('train', data_root), read_imdb('test', data_root)
+    train_data = load_csv(os.path.join(data_root, 'train.csv'))
+    test_data = load_csv(os.path.join(data_root, 'test.csv'))
     vocab = get_vocab_imdb(train_data)
     print('# words in vocab:', len(vocab))
     train_set = Data.TensorDataset(*preprocess_imdb(train_data, vocab, max_l))
