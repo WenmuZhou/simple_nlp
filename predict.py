@@ -9,6 +9,10 @@ import torch
 from model import BiRNN, TextCNN
 
 
+def pad(x, max_l):
+    return x[:max_l] if len(x) > max_l else x + [0] * (max_l - len(x))
+
+
 class Pytorch_model:
     def __init__(self, model_path, gpu_id=None):
         '''
@@ -23,7 +27,7 @@ class Pytorch_model:
         else:
             self.device = torch.device("cpu")
         print('device:', self.device)
-        checkpoint = torch.load(model_path, map_location=self.device)
+        checkpoint = torch.load(model_path, map_location=torch.device("cpu"))
         self.vocab = checkpoint['vocab']
         # net = BiRNN(len(self.vocab), embed_size=100, num_hiddens=100, num_layers=2)
         net = TextCNN(len(self.vocab), embed_size=100, kernel_sizes=[3, 4, 5], num_channels=[100, 100, 100])
@@ -36,13 +40,13 @@ class Pytorch_model:
         tic = time.time()
         if isinstance(sentence, str):
             sentence = sentence.split(' ')
-        sentence = torch.tensor([self.vocab.stoi[word] for word in sentence], device=self.device)
+        sentence = torch.tensor(pad([self.vocab.stoi[word] for word in sentence], 500), device=self.device)
         sentence = sentence.unsqueeze(0)
         with torch.no_grad():
             preds = self.model(sentence).softmax(dim=1)[0]
-        label = preds.argmax()
+        label = preds.argmax().item()
         conf = preds[label].item()
-        result = 'positive' if label.item() == 1 else 'negative'
+        result = 'positive' if label == 1 else 'negative'
         return {'value': result, 'conf': conf, 'time': time.time() - tic}
 
 
